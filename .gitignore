@@ -1,4 +1,6 @@
 /ml/sols/
 /ml/data/
 /ml/.idea/
+.idea/
 /ml/ml.md
+/.venv/
