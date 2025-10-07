@@ -4,3 +4,7 @@
 .idea/
 /ml/ml.md
 /.venv/
+/dl/data/
+/dl/keras/
+/dl/checkpoints/
+/dl/tools/data/
