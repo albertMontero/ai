@@ -8,3 +8,5 @@
 /dl/keras/
 /dl/checkpoints/
 /dl/tools/data/
+/dl/__pycache__
+dl/dl_00_intro_pytorch_old.ipynb
