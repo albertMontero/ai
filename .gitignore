@@ -1,12 +1,49 @@
-/ml/sols/
-/ml/data/
-/ml/.idea/
+#/ml/sols/
+#/ml/data/
+#/ml/.idea/
+#.idea/
+#/ml/ml.md
+#/.venv/
+#/dl/data/
+#/dl/keras/
+#/dl/checkpoints/
+#/dl/tools/data/
+#/dl/__pycache__
+#dl/dl_00_intro_pytorch_old.ipynb
+#/dl/cv_project/notebooks/cv_01_transfer_learning_resnet18.ipynb
+# IDE
 .idea/
-/ml/ml.md
-/.venv/
-/dl/data/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Data, models, and training artifacts (anywhere in project)
+**/data/
+!**/data/README.md
+**/checkpoints/
+**/sols/
+**/models/
+**/images/
+
+# Keras and tools specific
 /dl/keras/
-/dl/checkpoints/
 /dl/tools/data/
-/dl/__pycache__
+
+# Project-specific files
+/ml/ml.md
+
+# Jupyter Notebooks (checkpoints and temporary files)
+.ipynb_checkpoints/
+*-checkpoint.ipynb
+
+# Exclude specific old/deprecated notebooks
 dl/dl_00_intro_pytorch_old.ipynb

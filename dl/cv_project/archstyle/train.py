@@ -3,17 +3,17 @@ import time
 
 import torch
 import torch.nn as nn
-import matplotlib.pyplot as plt
-import numpy as np
+from torch.utils.data import DataLoader
+
 from tempfile import TemporaryDirectory
 
+from PIL import Image
 from torch.optim import lr_scheduler
 
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 
 
 def train_model(model, dataloaders, criterion=None, optimizer=None, scheduler=None, num_epochs=5):
-
     if criterion is None:
         criterion = nn.CrossEntropyLoss()
     if optimizer is None:
@@ -21,6 +21,8 @@ def train_model(model, dataloaders, criterion=None, optimizer=None, scheduler=No
         optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
     if scheduler is None:
         scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+
+    model.to(device)
 
     since = time.time()
     dataset_sizes = {'train': len(dataloaders["train"].dataset), 'val': len(dataloaders["val"].dataset)}
@@ -47,7 +49,7 @@ def train_model(model, dataloaders, criterion=None, optimizer=None, scheduler=No
                 if phase == 'train':
                     model.train()  # Set model to training mode
                 else:
-                    model.eval()   # Set model to evaluate mode
+                    model.eval()  # Set model to evaluate mode
 
                 running_loss = 0.0
                 running_corrects = 0
@@ -101,89 +103,36 @@ def train_model(model, dataloaders, criterion=None, optimizer=None, scheduler=No
         model.load_state_dict(torch.load(best_model_params_path, weights_only=True))
     return model, history
 
+
 def fine_tune(model, dataloaders, criterion=None, optimizer=None, scheduler=None, num_epochs=5):
     pass
 
-def plot_hist(history):
-    x_arr = np.arange(len(history['train_loss'])) + 1
-    fig = plt.figure(figsize=(12, 4))
-    ax = fig.add_subplot(1, 2, 1)
-    ax.plot(x_arr, history['train_loss'], '-o', label='train_loss')
-    ax.plot(x_arr, history['val_loss'], '-->', label='val_loss')
-    ax.set_xlabel('Epoch', size=15)
-    ax.set_ylabel('Loss', size=15)
-    ax.legend(fontsize=12)
-    ax = fig.add_subplot(1, 2, 2)
-    ax.plot(x_arr, history['train_accuracy'], '-o', label='train_acc')
-    ax.plot(x_arr, history['val_accuracy'], '-->', label='val_acc')
-    ax.legend(fontsize=12)
-    ax.set_xlabel('Epoch', size=15)
-    ax.set_ylabel('Accuracy', size=15)
 
-    plt.show()
+def evaluate(model, dataloader):
 
-def evaluate(model, ds):
-    model.eval()
-    with torch.inference_mode():
-        model.to("cpu")
-        pred = model(ds.data.float())
-        accuracy = (torch.argmax(pred, dim=1) == ds.targets).float()
-        print(f'Test accuracy: {accuracy.float().mean():.4f}')
-    model.train()
-
-
-# simple training loop
-# TODO: add early stopping, save model, etc.
-
-def train(model, num_epochs, train_dl, valid_dl, loss_fn=None, optimizer=None):
-    # Create a dictionary to store metrics history
-    history = {
-        'train_loss': [0] * num_epochs,
-        'train_accuracy': [0] * num_epochs,
-        'val_loss': [0] * num_epochs,
-        'val_accuracy': [0] * num_epochs
-    }
-
+    was_training = model.training
     model.to(device)
+    model.eval()
+    
+    # dataloader = DataLoader(ds, batch_size=32, shuffle=False)
+    
+    running_corrects = 0
+    total = 0
+    
+    with torch.inference_mode():
+        for inputs, labels in dataloader:
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+            
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+            
+            running_corrects += torch.sum(preds == labels).float()
+            total += labels.size(0)
+    
+    accuracy = running_corrects.double() / total
+    print(f'Accuracy: {accuracy:.4f}')
+    print("Total: ", total)
+    print("Correct: ", running_corrects.cpu().numpy())
 
-    if loss_fn is None:
-        loss_fn = nn.CrossEntropyLoss()
-    if optimizer is None:
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-
-    for epoch in range(num_epochs):
-        model.train()
-        for x_batch, y_batch in train_dl:
-            x_batch = x_batch.to(device)
-            y_batch = y_batch.to(device)
-            pred = model(x_batch)
-            loss = loss_fn(pred, y_batch)
-
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad()
-
-            history['train_loss'][epoch] += loss.item() * y_batch.size(0)
-            is_correct = (torch.argmax(pred, dim=1) == y_batch).float()
-            history['train_accuracy'][epoch] += is_correct.sum().cpu()
-
-        history['train_loss'][epoch] /= len(train_dl.dataset)
-        history['train_accuracy'][epoch] /= len(train_dl.dataset)
-
-        model.eval()
-        with torch.no_grad():
-            for x_batch, y_batch in valid_dl:
-                x_batch = x_batch.to(device)
-                y_batch = y_batch.to(device)
-                pred = model(x_batch)
-                loss = loss_fn(pred, y_batch)
-                history['val_loss'][epoch] += loss.item() * y_batch.size(0)
-                is_correct = (torch.argmax(pred, dim=1) == y_batch).float()
-                history['val_accuracy'][epoch] += is_correct.sum().cpu()
-
-        history['val_loss'][epoch] /= len(valid_dl.dataset)
-        history['val_accuracy'][epoch] /= len(valid_dl.dataset)
-
-        print(f'Epoch {epoch+1}: train_acc: {history["train_accuracy"][epoch]:.4f} val_acc: {history["val_accuracy"][epoch]:.4f} train_loss: {history["train_loss"][epoch]:.4f} val_loss: {history["val_loss"][epoch]:.4f}')
-
-    return history
+    model.train(mode=was_training)
