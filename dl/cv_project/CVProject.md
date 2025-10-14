@@ -18,6 +18,11 @@
   - train/val/test split
 - Model training (with pretrained models)
 ## Week 3
+- Hyperparameter tuning. Let's focus only on:
+  - learning rate
+  - batch size
+  - number of epochs
+  - model architecture
 - Model training
 - Model evaluation
 - Simple streamlit app [Optional]
