@@ -12,7 +12,6 @@ from torch.optim import lr_scheduler
 
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 
-
 def train_model(model, dataloaders, criterion=None, optimizer=None, scheduler=None, num_epochs=5):
     if criterion is None:
         criterion = nn.CrossEntropyLoss()
@@ -102,10 +101,6 @@ def train_model(model, dataloaders, criterion=None, optimizer=None, scheduler=No
         # load best model weights
         model.load_state_dict(torch.load(best_model_params_path, weights_only=True))
     return model, history
-
-
-def fine_tune(model, dataloaders, criterion=None, optimizer=None, scheduler=None, num_epochs=5):
-    pass
 
 
 def evaluate(model, dataloader):
